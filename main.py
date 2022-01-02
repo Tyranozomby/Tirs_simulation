@@ -96,8 +96,9 @@ def poser_obstacle(event: pygame.event.Event, scene: Scene):
                 scene.murs.append(mur)
                 scene.temp_point = None
 
-    elif event.button == 3:
-        pass
+    elif event.button == 3 and event.type == pygame.MOUSEBUTTONUP:
+        if len(scene.murs) > 0:
+            scene.murs.pop()
 
 
 def main():
