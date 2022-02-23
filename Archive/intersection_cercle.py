@@ -1,9 +1,10 @@
 from math import sqrt
+from typing import Tuple, Optional
 
 from structures import Cercle, Point
 
 
-def intersection_cercle(cercle: Cercle, debut: Point, fin: Point):
+def intersection_cercle(cercle: Cercle, debut: Point, fin: Point) -> Optional[Point]:
     a, b, nb = intersections(cercle, debut, fin)
 
     if nb == 0:
@@ -14,7 +15,7 @@ def intersection_cercle(cercle: Cercle, debut: Point, fin: Point):
         return a if a.distance_points(debut) < b.distance_points(debut) else b
 
 
-def intersections(cercle, debut, fin):
+def intersections(cercle, debut, fin) -> Tuple[Optional[Point], Optional[Point], int]:
     # https://stackoverflow.com/questions/23016676/line-segment-and-circle-intersection
     cx, cy = cercle.pos.tuple()
     r = cercle.rayon
