@@ -13,7 +13,7 @@ class Simulation:
     canvas: Canvas
     target: Optional[Circle]
     shooter: Optional[Circle]
-    tirs: List[Tir]
+    shots: List[Tir]
     walls: List[Rectangle]
     mode: int
 
@@ -21,7 +21,7 @@ class Simulation:
         self.canvas = screen
         self.target = None
         self.shooter = None
-        self.tirs = []
+        self.shots = []
         self.walls = []
         self.mode = 0
 

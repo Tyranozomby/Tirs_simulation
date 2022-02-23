@@ -18,10 +18,10 @@ class Circle:
     radius: int
     color: str
 
-    def __init__(self, pos: Point, rayon: int, couleur: str):
+    def __init__(self, pos: Point, radius: int, color: str):
         self.pos = pos
-        self.radius = rayon
-        self.color = couleur
+        self.radius = radius
+        self.color = color
 
     def draw(self, screen: Canvas):
         x0 = self.pos.x - self.radius
