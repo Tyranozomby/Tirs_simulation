@@ -11,11 +11,12 @@ from constantes import *
 # It contains the canvas and all the elements needed.
 class Simulation:
     canvas: Canvas
-    target: Optional[Circle]
-    shooter: Optional[Circle]
+    target: Optional[Character]
+    shooter: Optional[Character]
     shots: List[Tir]
-    walls: List[Rectangle]
-    mode: int
+    walls: List[Wall]
+    mode: int  # Placement mode
+    temp: Optional[Point]  # Temporary point for wall placement
 
     def __init__(self, screen: Canvas):
         self.canvas = screen
@@ -24,24 +25,43 @@ class Simulation:
         self.shots = []
         self.walls = []
         self.mode = 0
+        self.temp = None
 
     # Toggle mode between character placement and obstacle placement
     def switch_mode(self):
         self.mode = (self.mode + 1) % 2
         print("Mode placement" if self.mode == 0 else "Mode obstacle")
 
-    def set_target(self, x, y):
-        print("clic")
-        new = Circle(Point(x, y), T_SIZE, T_COLOR)
-        if not self.shooter or not new.is_in(self.shooter):
+    def set_target(self, x: int, y: int):
+        new = Character(Point(x, y), T_SIZE, T_COLOR)
+        if not new.is_in(self.shooter) and not self.touches_wall(new):
             self.target = new
             self.update()
 
-    def set_shooter(self, x, y):
-        new = Circle(Point(x, y), S_SIZE, S_COLOR)
-        if not self.target or not new.is_in(self.target):
+    def set_shooter(self, x: int, y: int):
+        new = Character(Point(x, y), S_SIZE, S_COLOR)
+        if not new.is_in(self.target) and not self.touches_wall(new):
             self.shooter = new
             self.update()
+
+    def set_wall(self, x: int, y: int, step: int):
+        if step == 0:
+            self.temp = Point(x, y)
+        if step == 1:
+            new = Wall(self.temp, Point(x, y), W_COLOR)
+
+            if not new.is_in(self.shooter) and not new.is_in(self.target) and new.surface() >= MIN_WALL_SURFACE:
+                self.walls.append(new)
+                self.update()
+
+    def undo_wall(self):
+        self.walls.pop()
+        self.update()
+
+    def touches_wall(self, char: Character):
+        for wall in self.walls:
+            if wall.is_in(char):
+                return True
 
     # Redraw the whole canvas
     def update(self):
@@ -52,8 +72,8 @@ class Simulation:
             self.shooter.draw(self.canvas)
         # for tir in self.tirs:
         #     tir.draw(self.screen)
-        # for mur in self.murs:
-        #     mur.draw(self.screen)
+        for wall in self.walls:
+            wall.draw(self.canvas)
 
     # Start the simulation
     def run(self):
@@ -91,9 +111,14 @@ def events_handler(window: Tk):
 
     # Mouse events :
     # Left click places the target if possible
-    window.bind("<Button-1>", lambda event: scene.set_target(event.x, event.y))
+    window.bind("<Button-1>",
+                lambda event: scene.set_target(event.x, event.y) if scene.mode == 0 else scene.set_wall(event.x,
+                                                                                                        event.y, 0))
     # Right click places the shooter if possible
-    window.bind("<Button-3>", lambda event: scene.set_shooter(event.x, event.y))
+    window.bind("<Button-3>",
+                lambda event: scene.set_shooter(event.x, event.y) if scene.mode == 0 else scene.undo_wall())
+
+    window.bind("<ButtonRelease-1>", lambda event: scene.set_wall(event.x, event.y, 1) if scene.mode == 1 else None)
 
 
 if __name__ == "__main__":
