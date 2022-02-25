@@ -2,7 +2,7 @@ from tkinter import *
 from typing import Optional, List
 
 from structures import *
-from tir import *
+from shot import *
 
 from constantes import *
 
@@ -16,18 +16,23 @@ class Simulation:
     shots: List[Tir]
     walls: List[Wall]
     mode: int  # Placement mode
+
     temp: Optional[Point]  # Temporary point for wall placement
+    preview: Optional[Wall]  # Wall preview
 
     def __init__(self, screen: Canvas):
         self.canvas = screen
         self.target = None
         self.shooter = None
-        self.shots = []
         self.walls = []
+        self.shots = []
         self.mode = 0
-        self.temp = None
 
-    # Toggle mode between character placement and obstacle placement
+        self.temp = None
+        self.preview = None
+
+        # Toggle mode between character placement and obstacle placement
+
     def switch_mode(self):
         self.mode = (self.mode + 1) % 2
         print("Mode placement" if self.mode == 0 else "Mode obstacle")
@@ -44,18 +49,30 @@ class Simulation:
             self.shooter = new
             self.update()
 
-    def set_wall(self, x: int, y: int, step: int):
-        if step == 0:
+    def set_wall(self, x: int, y: int, release: bool = False):
+        if not release and self.temp is None:
             self.temp = Point(x, y)
-        if step == 1:
+        elif release and self.temp is not None:
             new = Wall(self.temp, Point(x, y), W_COLOR)
 
             if not new.is_in(self.shooter) and not new.is_in(self.target) and new.surface() >= MIN_WALL_SURFACE:
                 self.walls.append(new)
-                self.update()
+                self.clear_preview()
 
     def undo_wall(self):
-        self.walls.pop()
+        if len(self.walls) > 0:
+            self.walls.pop()
+            self.update()
+
+    def wall_preview(self, x, y):
+        if self.temp is not None:
+            self.update()
+            self.preview = Wall(self.temp, Point(x, y), WP_COLOR)
+            self.preview.draw(self.canvas, True)
+
+    def clear_preview(self):
+        self.temp = None
+        self.preview = None
         self.update()
 
     def touches_wall(self, char: Character):
@@ -108,17 +125,22 @@ def events_handler(window: Tk):
     window.bind("<Return>", lambda event: scene.switch_mode())
     # Pressing <space> start the simulation
     window.bind("<space>", lambda event: scene.run())
+    window.bind("<Escape>", lambda event: scene.clear_preview())
 
     # Mouse events :
-    # Left click places the target if possible
-    window.bind("<Button-1>",
+    # Left click places the target if possible | Start putting a wall
+    window.bind("<ButtonPress-1>",
                 lambda event: scene.set_target(event.x, event.y) if scene.mode == 0 else scene.set_wall(event.x,
-                                                                                                        event.y, 0))
-    # Right click places the shooter if possible
+                                                                                                        event.y))
+    # Right click places the shooter if possible | Remove last wall
     window.bind("<Button-3>",
                 lambda event: scene.set_shooter(event.x, event.y) if scene.mode == 0 else scene.undo_wall())
+    # Release left click put a wall if possible
+    window.bind("<ButtonRelease-1>",
+                lambda event: scene.set_wall(event.x, event.y, True) if scene.mode == 1 else None)
 
-    window.bind("<ButtonRelease-1>", lambda event: scene.set_wall(event.x, event.y, 1) if scene.mode == 1 else None)
+    # Show the future wall
+    window.bind("<Motion>", lambda event: scene.wall_preview(event.x, event.y))
 
 
 if __name__ == "__main__":

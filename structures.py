@@ -3,8 +3,6 @@ from tkinter import Canvas
 
 
 # Class representing a geometrical point on the window
-
-
 class Point:
     x: float
     y: float
@@ -77,9 +75,9 @@ class Wall:
 
         self.color = color
 
-    def draw(self, screen: Canvas):
+    def draw(self, screen: Canvas, trans: bool = False):
         screen.create_rectangle(self.top_left.x, self.top_left.y, self.bottom_right.x, self.bottom_right.y,
-                                fill=self.color, outline=self.color)
+                                fill=self.color, outline=self.color, stipple="gray50" if trans else None)
 
     def surface(self):
         return self.width * self.height

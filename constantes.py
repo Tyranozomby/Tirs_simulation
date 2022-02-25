@@ -15,4 +15,5 @@ S_SIZE: int = 25  # Radius of the circle
 S_COLOR: str = "red"  # Shooter's color
 
 W_COLOR: str = "black"  # Wall's color
+WP_COLOR: str = "gray50"  # Wall preview color
 MIN_WALL_SURFACE: int = 1000  # Minimal wall surface allowed
