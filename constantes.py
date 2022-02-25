@@ -4,7 +4,8 @@ TITLE: str = "Simulation de tirs"  # Window's title
 WIDTH: int = 1000  # Window's width
 HEIGHT: int = 700  # Window's height
 
-BG_COLOR = "cyan"  # Default background color
+BG_COLOR: str = "cyan"  # Default background color
+BAR_COLOR: str = "white"  # Bar background color
 
 PRECISION: int = 1  # Number of shot per degree (360 × this in total)
 

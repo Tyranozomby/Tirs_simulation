@@ -75,9 +75,13 @@ class Wall:
 
         self.color = color
 
-    def draw(self, screen: Canvas, trans: bool = False):
-        screen.create_rectangle(self.top_left.x, self.top_left.y, self.bottom_right.x, self.bottom_right.y,
-                                fill=self.color, outline=self.color, stipple="gray50" if trans else None)
+    def draw(self, screen: Canvas, preview: bool = False):
+        if preview:
+            screen.create_rectangle(self.top_left.x, self.top_left.y, self.bottom_right.x, self.bottom_right.y,
+                                    fill=self.color, stipple="gray50")
+        else:
+            screen.create_rectangle(self.top_left.x, self.top_left.y, self.bottom_right.x, self.bottom_right.y,
+                                    fill=self.color, outline=self.color)
 
     def surface(self):
         return self.width * self.height
