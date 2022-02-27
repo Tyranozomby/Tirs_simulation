@@ -7,7 +7,9 @@ HEIGHT: int = 700  # Window's height
 BG_COLOR: str = "cyan"  # Default background color
 BAR_COLOR: str = "white"  # Bar background color
 
-PRECISION: int = 1  # Number of shot per degree (360 × this in total)
+PRECISION: int = 1  # Number of shot per degree, the more, the laggier (More than 5 isn't useful)
+MAX_BOUNCES: int = 1  # Number of bounces allowed for a shot
+L_COLOR: str = "#FF7F00"  # Shot line's color
 
 T_SIZE: int = 25  # Radius of the circle
 T_COLOR: str = "blue"  # Target's color

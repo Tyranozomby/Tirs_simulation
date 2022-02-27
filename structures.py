@@ -1,8 +1,10 @@
 from math import sqrt
 from tkinter import Canvas
 
-
 # Class representing a geometrical point on the window
+from typing import Tuple
+
+
 class Point:
     x: float
     y: float
@@ -11,9 +13,28 @@ class Point:
         self.x = x
         self.y = y
 
+    def __str__(self) -> str:
+        return f"{self.x = }, {self.y = }"
+
+    def __add__(self, other: "Point") -> "Point":
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other: "Point") -> "Point":
+        return Point(self.x - other.x, self.y - other.y)
+
+    def tuple(self) -> Tuple[float, float]:
+        return self.x, self.y
+
+    def space_between(self, to: "Point") -> float:
+        return sqrt(((self.x - to.x) ** 2) + ((self.y - to.y) ** 2))
+
+    def to_vector(self):
+        from shot import Vector
+        return Vector(self.x, self.y)
+
 
 # Class representing a circle for the shooter or the target
-class Character:
+class Dude:
     pos: Point
     radius: int
     color: str
@@ -32,7 +53,7 @@ class Character:
         screen.create_oval(x0, y0, x1, y1, fill=self.color, outline=self.color)
 
     # Indicate if this circle is in another one (collision detection)
-    def is_in(self, other: "Character") -> bool:
+    def is_in(self, other: "Dude") -> bool:
         if other is None:
             return False
 
@@ -86,7 +107,7 @@ class Wall:
     def surface(self):
         return self.width * self.height
 
-    def is_in(self, other: Character):
+    def is_in(self, other: Dude):
         if other is None:
             return False
 

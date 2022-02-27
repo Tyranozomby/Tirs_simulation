@@ -1,11 +1,10 @@
 from tkinter import *
-from typing import Optional, List
+from typing import Optional
 
 from bar import Infos
-from structures import *
-from shot import *
-
 from constantes import *
+from shot import *
+from structures import *
 
 
 # Class for the simulation.
@@ -14,9 +13,9 @@ class Simulation:
     screen: Canvas
     bar: Infos
 
-    target: Optional[Character]
-    shooter: Optional[Character]
-    shots: List[Tir]
+    target: Optional[Dude]
+    shooter: Optional[Dude]
+    shots: List[Shot]
     walls: List[Wall]
     mode: int  # Placement mode
 
@@ -43,13 +42,13 @@ class Simulation:
         self.bar.change_text(self.mode)
 
     def set_target(self, x: int, y: int):
-        new = Character(Point(x, y), T_SIZE, T_COLOR)
+        new = Dude(Point(x, y), T_SIZE, T_COLOR)
         if not new.is_in(self.shooter) and not self.touches_wall(new):
             self.target = new
             self.update()
 
     def set_shooter(self, x: int, y: int):
-        new = Character(Point(x, y), S_SIZE, S_COLOR)
+        new = Dude(Point(x, y), S_SIZE, S_COLOR)
         if not new.is_in(self.target) and not self.touches_wall(new):
             self.shooter = new
             self.update()
@@ -80,20 +79,20 @@ class Simulation:
         self.preview = None
         self.update()
 
-    def touches_wall(self, char: Character):
+    def touches_wall(self, char: Dude):
         for wall in self.walls:
             if wall.is_in(char):
                 return True
 
     # Redraw the whole canvas
-    def update(self):
-        self.screen.delete("all")
+    def update(self, erase=True):
+        if erase:
+            self.screen.delete("all")
+
         if self.target:
             self.target.draw(self.screen)
         if self.shooter:
             self.shooter.draw(self.screen)
-        # for tir in self.tirs:
-        #     tir.draw(self.screen)
         for wall in self.walls:
             wall.draw(self.screen)
 
@@ -101,9 +100,15 @@ class Simulation:
     def run(self):
         print("Let's go")
         if self.target and self.shooter:
+            self.shots.clear()
             for angle in range(0, 360 * PRECISION):
-                pass
-        self.update()
+                shot = Shot(self.shooter.pos, angle / PRECISION)
+                shot.shoot(self.target, self.shooter, self.walls)
+                self.shots.append(shot)
+
+        for shot in self.shots:
+            shot.draw(self.screen)
+        self.update(erase=False)
 
 
 # Initialization of the window and the events handler
@@ -138,13 +143,13 @@ def events_handler(window: Tk, canvas: Canvas):
     window.bind("<space>", lambda event: scene.run())
     window.bind("<Escape>", lambda event: scene.clear_preview())
 
-    # Mouse events :
+    # Mouse events in the canvas:
     # Left click places the target if possible | Start putting a wall
     canvas.bind("<ButtonPress-1>",
                 lambda event: scene.set_target(event.x, event.y) if scene.mode == 0 else scene.set_wall(event.x,
                                                                                                         event.y))
     # Right click places the shooter if possible | Remove last wall
-    canvas.bind("<Button-3>",
+    canvas.bind("<ButtonPress-3>",
                 lambda event: scene.set_shooter(event.x, event.y) if scene.mode == 0 else scene.undo_wall())
     # Release left click put a wall if possible
     canvas.bind("<ButtonRelease-1>",
