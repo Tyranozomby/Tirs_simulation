@@ -1,5 +1,4 @@
 from tkinter import *
-from typing import Optional
 
 from bar import Infos
 from constantes import *
@@ -103,8 +102,9 @@ class Simulation:
             self.shots.clear()
             for angle in range(0, 360 * PRECISION):
                 shot = Shot(self.shooter.pos, angle / PRECISION)
-                shot.shoot(self.target, self.shooter, self.walls)
-                self.shots.append(shot)
+                touch = shot.shoot(self.target, self.shooter, self.walls, self.screen)
+                if touch:
+                    self.shots.append(touch)
 
         for shot in self.shots:
             shot.draw(self.screen)

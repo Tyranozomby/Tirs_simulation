@@ -14,7 +14,7 @@ class Point:
         self.y = y
 
     def __str__(self) -> str:
-        return f"{self.x = }, {self.y = }"
+        return f"{self.x = } - {self.y = }"
 
     def __add__(self, other: "Point") -> "Point":
         return Point(self.x + other.x, self.y + other.y)
@@ -22,10 +22,13 @@ class Point:
     def __sub__(self, other: "Point") -> "Point":
         return Point(self.x - other.x, self.y - other.y)
 
+    def __repr__(self):
+        return self.__str__()
+
     def tuple(self) -> Tuple[float, float]:
         return self.x, self.y
 
-    def space_between(self, to: "Point") -> float:
+    def distance(self, to: "Point") -> float:
         return sqrt(((self.x - to.x) ** 2) + ((self.y - to.y) ** 2))
 
     def to_vector(self):
@@ -122,3 +125,8 @@ class Wall:
         corner_distance_sq = (circle_distance.x - self.width / 2) ** 2 + (
                 circle_distance.y - self.height / 2) ** 2
         return corner_distance_sq < other.radius ** 2
+
+    def sides(self):
+        from shot import Segment
+        return [Segment(self.top_left, self.top_right), Segment(self.top_left, self.bottom_left),
+                Segment(self.bottom_left, self.bottom_right), Segment(self.top_right, self.bottom_right)]

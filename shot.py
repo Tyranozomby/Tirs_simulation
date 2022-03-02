@@ -1,7 +1,7 @@
 from tkinter import Canvas
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Tuple
 
-from numpy import sin, cos, sqrt
+from math import sin, cos, sqrt, isclose
 
 from constantes import MAX_BOUNCES, L_COLOR, HEIGHT, WIDTH
 from structures import Point, Dude, Wall
@@ -15,9 +15,9 @@ class Shot:
         self.angle = angle
         self.path = [start]
 
-    def shoot(self, target: Dude, shooter: Dude, walls: List[Wall]):
+    def shoot(self, target: Dude, shooter: Dude, walls: List[Wall], screen):
         for i in range(MAX_BOUNCES):
-            collisions: List[Tuple[Point, str, int]] = []
+            collisions: List[Tuple[Point, str, float]] = []
 
             direction = Vector(cos(self.angle), sin(self.angle))
 
@@ -30,17 +30,27 @@ class Shot:
 
             if col[0]:
                 vect = (col[0] - self.path[i]).to_vector()
-                if vect.angle_between(direction) > 0:  # Test collision valide
+                if vect.angle_between(direction) >= 0:  # Test collision valid
                     collisions.append(col)
 
-            # TODO tester collisions tous murs
+            # Collision with wall
+            for wall in walls:
+                inter = Segment(self.path[i], p2).intersect_rect(wall)
+                if inter:
+                    col = (inter[0], "WALL", inter[1].to_vector().angle_between(direction))
+                    collisions.append(col)
 
+            nearest: Tuple[Point, str, float]
             if collisions:
-                nearest: Point = collisions[0][0]
+                nearest = collisions[0]
                 for collision in collisions:
-                    if nearest.space_between(self.path[0]) < collision[0].space_between(self.path[0]):
-                        nearest = collision[0]
-                p2 = nearest
+                    if nearest[0].distance(self.path[0]) > collision[0].distance(self.path[0]):
+                        nearest = collision
+                p2 = nearest[0]
+
+                if nearest[1] == "TARGET":
+                    self.path.append(p2)
+                    return self
             # else alors test bordures
 
             self.path.append(p2)
@@ -85,6 +95,9 @@ class Segment:
         self.p1 = p1
         self.p2 = p2
 
+    def to_vector(self) -> Vector:
+        return Vector(self.p2.x - self.p1.x, self.p2.y - self.p1.y)
+
     def intersect_circle(self, circle: Dude) -> Optional[Point]:
         cx, cy = circle.pos.tuple()
         r = circle.radius
@@ -109,9 +122,47 @@ class Segment:
             p1 = Point(self.p1.x + t1 * dx, self.p1.y + t1 * dy)
             p2 = Point(self.p1.x + t2 * dx, self.p1.y + t2 * dy)
 
-            d1 = self.p1.space_between(p1)
-            d2 = self.p1.space_between(p2)
+            d1 = self.p1.distance(p1)
+            d2 = self.p1.distance(p2)
             if d1 < d2:
                 return p1
             else:
                 return p2
+
+    def intersect_rect(self, rect: Wall) -> Tuple[Point, "Segment"]:
+        inters = []
+        for side in rect.sides():
+            inter = self.intersect_seg(side)
+            if inter:
+                inters.append((inter, side))
+
+        if inters:
+            nearest = inters[0]
+            for inter in inters:
+                if inter[0].distance(self.p1) > nearest[0].distance(self.p1):
+                    nearest = inter
+            return nearest
+
+    def intersect_seg(self, seg: "Segment") -> Optional[Point]:
+        a1 = self.p2.y - self.p1.y
+        b1 = self.p1.x - self.p2.x
+        c1 = a1 * self.p1.x + b1 * self.p1.y
+
+        a2 = seg.p2.y - seg.p1.y
+        b2 = seg.p1.x - seg.p2.x
+        c2 = a2 * seg.p1.x + b2 * seg.p1.y
+
+        determinant = a1 * b2 - a2 * b1
+
+        if determinant == 0:
+            return None
+        else:
+            x = (b2 * c1 - b1 * c2) / determinant
+            y = (a1 * c2 - a2 * c1) / determinant
+            inter = Point(x, y)
+
+            if isclose(self.p1.distance(inter) + self.p2.distance(inter), self.p1.distance(self.p2), rel_tol=.01):
+                if isclose(seg.p1.distance(inter) + seg.p2.distance(inter), seg.p1.distance(seg.p2), rel_tol=.01):
+                    return inter
+
+        return None
