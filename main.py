@@ -1,7 +1,7 @@
 from tkinter import *
 
 from bar import Infos
-from constantes import *
+from constants import *
 from shot import *
 from structures import *
 
@@ -12,8 +12,8 @@ class Simulation:
     screen: Canvas
     bar: Infos
 
-    target: Optional[Dude]
-    shooter: Optional[Dude]
+    target: Optional[Character]
+    shooter: Optional[Character]
     shots: List[Shot]
     walls: List[Wall]
     mode: int  # Placement mode
@@ -41,13 +41,13 @@ class Simulation:
         self.bar.change_text(self.mode)
 
     def set_target(self, x: int, y: int):
-        new = Dude(Point(x, y), T_SIZE, T_COLOR)
+        new = Character(Point(x, y), T_SIZE, T_COLOR)
         if not new.is_in(self.shooter) and not self.touches_wall(new):
             self.target = new
             self.update()
 
     def set_shooter(self, x: int, y: int):
-        new = Dude(Point(x, y), S_SIZE, S_COLOR)
+        new = Character(Point(x, y), S_SIZE, S_COLOR)
         if not new.is_in(self.target) and not self.touches_wall(new):
             self.shooter = new
             self.update()
@@ -78,7 +78,7 @@ class Simulation:
         self.preview = None
         self.update()
 
-    def touches_wall(self, char: Dude):
+    def touches_wall(self, char: Character):
         for wall in self.walls:
             if wall.is_in(char):
                 return True
@@ -100,11 +100,13 @@ class Simulation:
         print("Let's go")
         if self.target and self.shooter:
             self.shots.clear()
-            for angle in range(0, 360 * PRECISION):
-                shot = Shot(self.shooter.pos, angle / PRECISION)
+
+            N = 360 * PRECISION
+            for angle in range(0, N):
+                shot = Shot(self.shooter.pos, (360 * angle) / N)
                 touch = shot.shoot(self.target, self.shooter, self.walls, self.screen)
                 if touch:
-                    self.shots.append(touch)
+                    self.shots.append(shot)
 
         for shot in self.shots:
             shot.draw(self.screen)

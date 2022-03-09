@@ -1,6 +1,6 @@
 from tkinter import Frame, Label
 
-from constantes import WIDTH, HEIGHT
+from constants import WIDTH, HEIGHT
 
 
 class Infos:

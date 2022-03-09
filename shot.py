@@ -1,10 +1,11 @@
+import math
 from tkinter import Canvas
 from typing import List, Optional, Tuple
 
 from math import sin, cos, sqrt, isclose
 
-from constantes import MAX_BOUNCES, L_COLOR, HEIGHT, WIDTH
-from structures import Point, Dude, Wall
+from constants import MAX_BOUNCES, L_COLOR, HEIGHT, WIDTH
+from structures import Point, Character, Wall
 
 
 class Shot:
@@ -12,48 +13,78 @@ class Shot:
     path: List[Point]
 
     def __init__(self, start: Point, angle: float):
-        self.angle = angle
+        self.angle = round(angle, 3)
         self.path = [start]
 
-    def shoot(self, target: Dude, shooter: Dude, walls: List[Wall], screen):
-        for i in range(MAX_BOUNCES):
-            collisions: List[Tuple[Point, str, float]] = []
+    def shoot(self, target: Character, shooter: Character, walls: List[Wall], screen):
+        for i in range(MAX_BOUNCES + 1):
+            collisions: List[Tuple[Point, str, Optional[Segment]]] = []
 
-            direction = Vector(cos(self.angle), sin(self.angle))
+            angle = self.angle * math.pi / 180
+            direction = Vector(cos(angle), sin(angle))
 
-            max_length = sqrt(HEIGHT ** 2 + WIDTH ** 2)
+            max_length = round(sqrt(HEIGHT ** 2 + WIDTH ** 2))
 
             p2: Point = (direction * max_length + self.path[i]).to_point()
 
+            shot = Segment(self.path[i], p2)
+
+            if i >= 1:
+                col = shot.intersect_circle(shooter)
+                if col:
+                    return None
+
             # Collision with target
-            col = (Segment(self.path[i], p2).intersect_circle(target), "TARGET", 0)
+            col = (shot.intersect_circle(target), "TARGET", None)
 
             if col[0]:
                 vect = (col[0] - self.path[i]).to_vector()
-                if vect.angle_between(direction) >= 0:  # Test collision valid
+                if vect.angle_between(direction) == 0:  # Test collision valid
                     collisions.append(col)
 
             # Collision with wall
             for wall in walls:
-                inter = Segment(self.path[i], p2).intersect_rect(wall)
+                inter = shot.intersect_rect(wall)
                 if inter:
-                    col = (inter[0], "WALL", inter[1].to_vector().angle_between(direction))
+                    col = (inter[0], "WALL", inter[1])
                     collisions.append(col)
 
-            nearest: Tuple[Point, str, float]
+            nearest: Tuple[Point, str, Optional[Segment]]
             if collisions:
                 nearest = collisions[0]
                 for collision in collisions:
-                    if nearest[0].distance(self.path[0]) > collision[0].distance(self.path[0]):
+                    if nearest[0].distance(self.path[i]) > collision[0].distance(self.path[i]):
                         nearest = collision
                 p2 = nearest[0]
 
                 if nearest[1] == "TARGET":
                     self.path.append(p2)
                     return self
-            # else alors test bordures
+
+                self.angle = self.angle_rebound(shot.to_vector(), nearest[2])
+
+            else:
+                borders: List[Segment] = Wall(Point(0, 0), Point(WIDTH, HEIGHT), "OUTSIDES").sides()
+                for border in borders:
+                    point = shot.intersect_seg(border)
+                    if point:
+                        p2 = point
+                        self.angle = self.angle_rebound(shot.to_vector(), border)
 
             self.path.append(p2)
+
+    def angle_rebound(self, shot: "Vector", obs: "Segment"):
+        if obs.p1.x == obs.p2.x:
+            vec = Vector(-shot.x, shot.y)
+        else:
+            vec = Vector(shot.x, -shot.y)
+
+        angle = vec.angle_between(Vector(1, 0))
+
+        if vec.y < 0:
+            angle = 360 - angle
+
+        return round(angle, 3)
 
     def draw(self, screen: Canvas):
         for i in range(1, len(self.path)):
@@ -64,7 +95,7 @@ class Vector:
     x: float
     y: float
 
-    def __init__(self, x, y):
+    def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
 
@@ -74,6 +105,12 @@ class Vector:
     def __add__(self, other) -> "Vector":
         return Vector(self.x + other.x, self.y + other.y)
 
+    def __str__(self) -> str:
+        return f"{self.x = } {self.y = }"
+
+    def __repr__(self):
+        return self.__str__()
+
     def magnitude(self) -> float:
         return sqrt(self.x ** 2 + self.y ** 2)
 
@@ -81,7 +118,10 @@ class Vector:
         return self.x * other.x + self.y * other.y
 
     def angle_between(self, other: "Vector"):
-        return self.dot(other) / (self.magnitude() * other.magnitude())
+        angle = self.dot(other) / (self.magnitude() * other.magnitude())
+        angle = max(-1.0, angle)
+        angle = min(1.0, angle)
+        return round(math.acos(angle) / math.pi * 180, 3)
 
     def to_point(self):
         return Point(self.x, self.y)
@@ -98,7 +138,7 @@ class Segment:
     def to_vector(self) -> Vector:
         return Vector(self.p2.x - self.p1.x, self.p2.y - self.p1.y)
 
-    def intersect_circle(self, circle: Dude) -> Optional[Point]:
+    def intersect_circle(self, circle: Character) -> Optional[Point]:
         cx, cy = circle.pos.tuple()
         r = circle.radius
 
@@ -139,7 +179,7 @@ class Segment:
         if inters:
             nearest = inters[0]
             for inter in inters:
-                if inter[0].distance(self.p1) > nearest[0].distance(self.p1):
+                if inter[0].distance(self.p1) < nearest[0].distance(self.p1):
                     nearest = inter
             return nearest
 
@@ -161,8 +201,11 @@ class Segment:
             y = (a1 * c2 - a2 * c1) / determinant
             inter = Point(x, y)
 
-            if isclose(self.p1.distance(inter) + self.p2.distance(inter), self.p1.distance(self.p2), rel_tol=.01):
-                if isclose(seg.p1.distance(inter) + seg.p2.distance(inter), seg.p1.distance(seg.p2), rel_tol=.01):
+            if -0.001 < self.p1.distance(inter) < 0.001:
+                return None
+
+            if isclose(self.p1.distance(inter) + self.p2.distance(inter), self.p1.distance(self.p2), rel_tol=.001):
+                if isclose(seg.p1.distance(inter) + seg.p2.distance(inter), seg.p1.distance(seg.p2), rel_tol=.001):
                     return inter
 
         return None
