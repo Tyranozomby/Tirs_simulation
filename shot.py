@@ -11,12 +11,14 @@ from structures import Point, Character, Wall
 class Shot:
     angle: float
     path: List[Point]
+    length: float
 
     def __init__(self, start: Point, angle: float):
         self.angle = round(angle, 3)
         self.path = [start]
+        self.length = 0
 
-    def shoot(self, target: Character, shooter: Character, walls: List[Wall], screen):
+    def shoot(self, target: Character, shooter: Character, walls: List[Wall]):
         for i in range(MAX_BOUNCES + 1):
             collisions: List[Tuple[Point, str, Optional[Segment]]] = []
 
@@ -58,10 +60,11 @@ class Shot:
                 p2 = nearest[0]
 
                 if nearest[1] == "TARGET":
+                    self.length += self.path[i].distance(p2)
                     self.path.append(p2)
                     return self
 
-                self.angle = self.angle_rebound(shot.to_vector(), nearest[2])
+                self.angle = shot.to_vector().angle_rebound(nearest[2])
 
             else:
                 borders: List[Segment] = Wall(Point(0, 0), Point(WIDTH, HEIGHT), "OUTSIDES").sides()
@@ -69,26 +72,14 @@ class Shot:
                     point = shot.intersect_seg(border)
                     if point:
                         p2 = point
-                        self.angle = self.angle_rebound(shot.to_vector(), border)
+                        self.angle = shot.to_vector().angle_rebound(border)
 
+            self.length += self.path[i].distance(p2)
             self.path.append(p2)
 
-    def angle_rebound(self, shot: "Vector", obs: "Segment"):
-        if obs.p1.x == obs.p2.x:
-            vec = Vector(-shot.x, shot.y)
-        else:
-            vec = Vector(shot.x, -shot.y)
-
-        angle = vec.angle_between(Vector(1, 0))
-
-        if vec.y < 0:
-            angle = 360 - angle
-
-        return round(angle, 3)
-
-    def draw(self, screen: Canvas):
+    def draw(self, screen: Canvas, color=L_COLOR):
         for i in range(1, len(self.path)):
-            screen.create_line(self.path[i - 1].x, self.path[i - 1].y, self.path[i].x, self.path[i].y, fill=L_COLOR)
+            screen.create_line(self.path[i - 1].x, self.path[i - 1].y, self.path[i].x, self.path[i].y, fill=color)
 
 
 class Vector:
@@ -125,6 +116,19 @@ class Vector:
 
     def to_point(self):
         return Point(self.x, self.y)
+
+    def angle_rebound(self, obs: "Segment"):
+        if obs.p1.x == obs.p2.x:
+            vec = Vector(-self.x, self.y)
+        else:
+            vec = Vector(self.x, -self.y)
+
+        angle = vec.angle_between(Vector(1, 0))
+
+        if vec.y < 0:
+            angle = 360 - angle
+
+        return round(angle, 3)
 
 
 class Segment:

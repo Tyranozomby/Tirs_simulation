@@ -1,3 +1,4 @@
+import time
 from tkinter import *
 
 from bar import Infos
@@ -63,6 +64,10 @@ class Simulation:
                 self.clear_preview()
 
     def undo_wall(self):
+        if self.temp:
+            self.clear_preview()
+            return
+
         if len(self.walls) > 0:
             self.walls.pop()
             self.update()
@@ -102,15 +107,36 @@ class Simulation:
             self.shots.clear()
 
             N = 360 * PRECISION
+            start = time.time()
+            fastest = None
             for angle in range(0, N):
                 shot = Shot(self.shooter.pos, (360 * angle) / N)
-                touch = shot.shoot(self.target, self.shooter, self.walls, self.screen)
+                touch = shot.shoot(self.target, self.shooter, self.walls)
                 if touch:
-                    self.shots.append(shot)
+                    if not fastest or touch.length < fastest.length:
+                        fastest = touch
+                    else:
+                        self.shots.append(shot)
 
-        for shot in self.shots:
-            shot.draw(self.screen)
-        self.update(erase=False)
+            total = round(time.time() - start, 2)
+            print(f"Done in {total} second{'' if total <= 1 else 's'}")
+
+            nb = len(self.shots) + 1 if fastest else 0
+            if nb == 0:
+                print(f"No shot hit")
+            elif nb == 1:
+                points = len(fastest.path)
+                print(f"Only one shot hit ({points - 2} ricochet{'' if points <= 3 else 's'})")
+            else:
+                print(f"{nb} shots got to the target")
+
+            for shot in self.shots:
+                shot.draw(self.screen)
+
+            if fastest:
+                fastest.draw(self.screen, FASTEST_COLOR)
+
+            self.update(erase=False)
 
 
 # Initialization of the window and the events handler
@@ -161,6 +187,7 @@ def events_handler(window: Tk, canvas: Canvas):
     canvas.bind("<Motion>", lambda event: scene.wall_preview(event.x, event.y) if scene.mode == 1 else None)
 
 
+# You can change the constants in constats.py to have fun
 if __name__ == "__main__":
     scene = init()
     scene.screen.mainloop()
