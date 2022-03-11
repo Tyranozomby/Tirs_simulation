@@ -2,7 +2,6 @@ import time
 from tkinter import *
 
 from bar import Infos
-from constants import *
 from shot import *
 from structures import *
 
@@ -42,13 +41,13 @@ class Simulation:
         self.bar.change_text(self.mode)
 
     def set_target(self, x: int, y: int):
-        new = Character(Point(x, y), T_SIZE, T_COLOR)
+        new = Character(Point(x, y), settings["T_SIZE"], settings["T_COLOR"])
         if not new.is_in(self.shooter) and not self.touches_wall(new):
             self.target = new
             self.update()
 
     def set_shooter(self, x: int, y: int):
-        new = Character(Point(x, y), S_SIZE, S_COLOR)
+        new = Character(Point(x, y), settings['S_SIZE'], settings['S_COLOR'])
         if not new.is_in(self.target) and not self.touches_wall(new):
             self.shooter = new
             self.update()
@@ -57,9 +56,10 @@ class Simulation:
         if not release and self.temp is None:
             self.temp = Point(x, y)
         elif release and self.temp is not None:
-            new = Wall(self.temp, Point(x, y), W_COLOR)
+            new = Wall(self.temp, Point(x, y), settings['W_COLOR'])
 
-            if not new.is_in(self.shooter) and not new.is_in(self.target) and new.surface() >= MIN_WALL_SURFACE:
+            if not new.is_in(self.shooter) and not new.is_in(self.target) \
+                    and new.surface() >= settings['MIN_WALL_SURFACE']:
                 self.walls.append(new)
                 self.clear_preview()
 
@@ -75,7 +75,7 @@ class Simulation:
     def wall_preview(self, x, y):
         if self.temp is not None:
             self.update()
-            self.preview = Wall(self.temp, Point(x, y), WP_COLOR)
+            self.preview = Wall(self.temp, Point(x, y), settings['PREVIEW_COLOR'])
             self.preview.draw(self.screen, True)
 
     def clear_preview(self):
@@ -102,24 +102,30 @@ class Simulation:
 
     # Start the simulation
     def run(self):
-        print("Let's go")
         if self.target and self.shooter:
+            self.update()
             self.shots.clear()
+            print("\n\nLet's go !")
+            print(
+                f"The shooter and the target are {round(self.target.pos.distance(self.shooter.pos) - self.shooter.radius - self.target.radius, 2)} units apart")
 
-            N = 360 * PRECISION
+            N = 360 * settings['PRECISION']
             start = time.time()
             fastest = None
             for angle in range(0, N):
                 shot = Shot(self.shooter.pos, (360 * angle) / N)
                 touch = shot.shoot(self.target, self.shooter, self.walls)
                 if touch:
-                    if not fastest or touch.length < fastest.length:
+                    if not fastest:
+                        fastest = touch
+                    elif touch.length < fastest.length:
+                        self.shots.append(fastest)
                         fastest = touch
                     else:
-                        self.shots.append(shot)
+                        self.shots.append(touch)
 
             total = round(time.time() - start, 2)
-            print(f"Done in {total} second{'' if total <= 1 else 's'}")
+            print(f"Done in {total} second{'' if total <= 2 else 's'}")
 
             nb = len(self.shots) + 1 if fastest else 0
             if nb == 0:
@@ -134,7 +140,11 @@ class Simulation:
                 shot.draw(self.screen)
 
             if fastest:
-                fastest.draw(self.screen, FASTEST_COLOR)
+                fastest.draw(self.screen, settings["FASTEST_COLOR"])
+                if nb != 1:
+                    points = len(fastest.path)
+                    print(
+                        f"Best shot did {points - 2} ricochet{'' if points <= 3 else 's'} and traveled {round(fastest.length - self.shooter.radius, 2)} units")
 
             self.update(erase=False)
 
@@ -142,20 +152,25 @@ class Simulation:
 # Initialization of the window and the events handler
 def init() -> Simulation:
     window = Tk()
-    window.title(TITLE)
+    window.title(settings["TITLE"])
     window.resizable(False, False)
+    window.configure(background=settings["BAR_COLOR"])
 
-    x = int((window.winfo_screenwidth() / 2) - (WIDTH / 2))
-    y = int((window.winfo_screenheight() / 2) - (HEIGHT * 1.2 / 2))
-    window.geometry(f"{WIDTH}x{int(HEIGHT * 1.2)}+{x}+{y}")
+    x = int((window.winfo_screenwidth() / 2) - (settings['WIDTH'] / 2))
+    y = int((window.winfo_screenheight() / 2) - (settings['HEIGHT'] * 1.35 / 2))
+    window.geometry(f"{settings['WIDTH']}x{int(settings['HEIGHT'] * 1.35)}+{x}+{y}")
 
-    canvas = Canvas(window, width=WIDTH, height=HEIGHT)
-    canvas.place(x=0, y=0)
-    canvas.configure(background=BG_COLOR)
+    canvas = Canvas(window, width=settings['WIDTH'], height=settings['HEIGHT'], background=settings['BG_COLOR'], bd=0)
+    canvas.grid(row=0)
 
-    bar = Frame(window, width=WIDTH, height=HEIGHT * .2)
-    bar.place(x=0, y=HEIGHT)
-    infos = Infos(bar, BAR_COLOR)
+    bar = Frame(window, background=settings['BAR_COLOR'], bd=0)
+    bar.grid(row=1, sticky="nsew")
+
+    bar.grid_columnconfigure(0, weight=1)
+    bar.grid_columnconfigure(1, weight=0)
+    bar.grid_columnconfigure(2, weight=1)
+
+    infos = Infos(bar, settings['BAR_COLOR'])
 
     window.update()
 

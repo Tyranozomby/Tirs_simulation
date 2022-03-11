@@ -1,10 +1,9 @@
 import math
+from math import sin, cos, sqrt, isclose
 from tkinter import Canvas
 from typing import List, Optional, Tuple
 
-from math import sin, cos, sqrt, isclose
-
-from constants import MAX_BOUNCES, L_COLOR, HEIGHT, WIDTH
+from settings.settings import settings
 from structures import Point, Character, Wall
 
 
@@ -19,13 +18,13 @@ class Shot:
         self.length = 0
 
     def shoot(self, target: Character, shooter: Character, walls: List[Wall]):
-        for i in range(MAX_BOUNCES + 1):
+        for i in range(settings['MAX_BOUNCES'] + 1):
             collisions: List[Tuple[Point, str, Optional[Segment]]] = []
 
             angle = self.angle * math.pi / 180
             direction = Vector(cos(angle), sin(angle))
 
-            max_length = round(sqrt(HEIGHT ** 2 + WIDTH ** 2))
+            max_length = round(sqrt(settings['HEIGHT'] ** 2 + settings['WIDTH'] ** 2))
 
             p2: Point = (direction * max_length + self.path[i]).to_point()
 
@@ -67,7 +66,8 @@ class Shot:
                 self.angle = shot.to_vector().angle_rebound(nearest[2])
 
             else:
-                borders: List[Segment] = Wall(Point(2, 2), Point(WIDTH, HEIGHT), "OUTSIDES").sides()
+                borders: List[Segment] = Wall(Point(2, 2), Point(settings['WIDTH'], settings['HEIGHT']),
+                                              "OUTSIDES").sides()
                 for border in borders:
                     point = shot.intersect_seg(border)
                     if point:
@@ -77,7 +77,7 @@ class Shot:
             self.length += self.path[i].distance(p2)
             self.path.append(p2)
 
-    def draw(self, screen: Canvas, color=L_COLOR):
+    def draw(self, screen: Canvas, color=settings['L_COLOR']):
         for i in range(1, len(self.path)):
             screen.create_line(self.path[i - 1].x, self.path[i - 1].y, self.path[i].x, self.path[i].y, fill=color)
 

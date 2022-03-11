@@ -1,6 +1,6 @@
-from tkinter import Frame, Label
+from tkinter import Frame, Label, Scale
 
-from constants import WIDTH, HEIGHT
+from settings.settings import settings
 
 
 class Infos:
@@ -8,40 +8,72 @@ class Infos:
     color: str
 
     mode: Label
-    left_click: Label
-    right_click: Label
-    enter: Label
-    space: Label
-
-    title = ["Placing characters", "Placing walls"]
-    left = ["Place the target", "Hold and drag to place a wall"]
-    right = ["Place the shooter", "Remove last wall"]
+    mode_text = ["Placing characters", "Placing obstacles"]
 
     def __init__(self, bar: Frame, color: str):
-        bar.configure(background=color)
-
-        self.mode = Label(text=self.title[0], bg=color, font="verdana 15 bold")
-        self.mode.place(x=WIDTH * .4, y=HEIGHT * 1.01)
-
-        Label(text="Left Click :", bg=color, font="verdana 12 underline bold").place(x=WIDTH * .1, y=HEIGHT * 1.065)
-        self.left_click = Label(text=self.left[0], bg=color, font="verdana 12")
-        self.left_click.place(x=WIDTH * .2, y=HEIGHT * 1.065)
-
-        Label(text="Right Click :", bg=color, font="verdana 12 underline bold").place(x=WIDTH * .1, y=HEIGHT * 1.14)
-        self.right_click = Label(text=self.right[0], bg=color, font="verdana 12")
-        self.right_click.place(x=WIDTH * .21, y=HEIGHT * 1.14)
-
-        Label(text="Return Button :", bg=color, font="verdana 12 underline bold").place(x=WIDTH * .5, y=HEIGHT * 1.065)
-        self.enter = Label(text="Press to switch to wall placement", bg=color, font="verdana 12")
-        self.enter.place(x=WIDTH * .65, y=HEIGHT * 1.065)
-
-        Label(text="Space Bar :", bg=color, font="verdana 12 underline bold").place(x=WIDTH * .5, y=HEIGHT * 1.14)
-        self.space = Label(text="Press to START the simulation", bg=color, font="verdana 12")
-        self.space.place(x=WIDTH * .61, y=HEIGHT * 1.14)
-
         self.bar = bar
+        self.color = color
+        self.show_settings()
+
+    def show_settings(self):
+        title = Label(self.bar, text="Settings", font="verdana 16 bold underline", background=self.color)
+        title.grid(row=0, column=0, columnspan=3)
+
+        # Col 0
+        Label(self.bar, text="Characters", font="verdana 12", background=self.color).grid(row=1, column=0)
+        G1 = Frame(self.bar, bg=self.color, highlightbackground="#00AAF8", highlightthickness=2, pady=2)
+        G1.grid(row=2, column=0, sticky="ns")
+
+        # Col 1
+        self.mode = Label(self.bar, text=self.mode_text[0], font="verdana 15 bold", background=self.color)
+        self.mode.grid(row=1, column=1, rowspan=2)
+
+        # Col 2
+        Label(self.bar, text="Shots", font="verdana 12", background=self.color).grid(row=1, column=2)
+        G2 = Frame(self.bar, bg=self.color, highlightbackground="#00AAF8", highlightthickness=2, pady=2)
+        G2.grid(row=2, column=2)
+
+        # G1
+        t_size = Label(G1, text=f"Target's size :", font="verdana 10 underline",
+                       background=self.color)
+        t_size.grid(row=0)
+
+        t_size_controller = Scale(G1, orient="horizontal", from_=5, to=50, sliderlength=20, resolution=5,
+                                  bg=self.color,
+                                  bd=0, highlightthickness=0, command=settings.change_T_SIZE)
+        t_size_controller.set(settings['T_SIZE'])
+        t_size_controller.grid(row=1)
+
+        s_size = Label(G1, text=f"Shooter's size :", font="verdana 10 underline",
+                       background=self.color)
+        s_size.grid(row=2)
+
+        s_size_controller = Scale(G1, orient="horizontal", from_=5, to=50, sliderlength=20, resolution=5,
+                                  bg=self.color,
+                                  bd=0, highlightthickness=0, command=settings.change_S_SIZE)
+        s_size_controller.set(settings['S_SIZE'])
+        s_size_controller.grid(row=3)
+
+        # G2
+        precision = Label(G2, text=f"Precision :", font="verdana 10 underline",
+                          background=self.color)
+        precision.grid(row=0)
+
+        precision_controller = Scale(G2, orient="horizontal", from_=1, to=5, sliderlength=20, resolution=1,
+                                     bg=self.color,
+                                     bd=0, highlightthickness=0, command=settings.change_PRECISION)
+        precision_controller.set(settings['PRECISION'])
+        precision_controller.grid(row=1)
+
+        bounces = Label(G2, text=f"Max ricochets :", font="verdana 10 underline",
+                        background=self.color)
+        bounces.grid(row=2)
+
+        bounces_controller = Scale(G2, orient="horizontal", from_=0, to=50, sliderlength=20, resolution=1,
+                                   bg=self.color,
+                                   bd=0, highlightthickness=0, command=settings.change_BOUNCES)
+        bounces_controller.set(settings['MAX_BOUNCES'])
+        bounces_controller.grid(row=3)
 
     def change_text(self, mode: int):
-        self.mode.configure(text=self.title[mode])
-        self.left_click.configure(text=self.left[mode])
-        self.right_click.configure(text=self.right[mode])
+        self.mode["text"] = self.mode_text[mode]
