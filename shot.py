@@ -67,7 +67,7 @@ class Shot:
                 self.angle = shot.to_vector().angle_rebound(nearest[2])
 
             else:
-                borders: List[Segment] = Wall(Point(0, 0), Point(WIDTH, HEIGHT), "OUTSIDES").sides()
+                borders: List[Segment] = Wall(Point(2, 2), Point(WIDTH, HEIGHT), "OUTSIDES").sides()
                 for border in borders:
                     point = shot.intersect_seg(border)
                     if point:
